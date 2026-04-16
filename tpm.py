@@ -141,8 +141,10 @@ def read_cfus(folder_path):
     # Get files
     files = os.listdir(folder_path)
     
-    # Filter out the summary files and keep only NDC comparisons
-    files = [csv for csv in files if ".summary" not in csv and "NDC0hr" in csv]
+    # Select CSV files
+    files = [csv for csv in files if ".csv" in csv]
+
+    # 
 
     # 
     # 
