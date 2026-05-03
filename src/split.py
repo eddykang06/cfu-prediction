@@ -68,6 +68,7 @@ def condition_to_drug(condition_label):
             # Find drug name using letter search
             first_alpha_idx = find_first_alpha(condition_label)
             drug_name = condition_label[first_alpha_idx:first_alpha_idx + 3]
+            return drug_name
     
     # Multiple drug case
     else:
@@ -140,6 +141,19 @@ def apply_scaler(X_train, X_test):
     
     return X_scaled_train, X_scaled_test
  
-def full_train_test_split():
+def full_train_test_split(data_df):
+    """
+    Function to run full train-test split procedure, including grouped split and scaler
 
-    
+    Args:
+        data_df     [N,G+1] : Dataframe with all TPM values (N samples, G genes + 1 column of CFUs)
+                              Index should contain condition names
+        test_size           : 0.1, 0.2, 0.25, or 0.33 for test set percentage
+
+    Returns:
+        X_train, y_train, X_test, y_test : Standard scaled
+    """
+    X_train_unscaled, y_train, X_test_unscaled, y_test = custom_train_test_split()
+    X_train, X_test = apply_scaler(X_train_unscaled, X_test_unscaled)
+
+    return X_train, y_train, X_test, y_test

@@ -121,7 +121,7 @@ def bind_tpm_data(tpm_df_list):
     # Remove NDC0hr columns from all dfs
     for df in tpm_df_list:
         columns = list(df.columns)
-        relevant_idx = [col for col in colnames if "NDC0hr" not in col]
+        relevant_idx = [col for col in columns if "NDC0hr" not in col]
         stripped_df = df[relevant_idx]
         tpm_df_list_uniq.append(stripped_df)
 
