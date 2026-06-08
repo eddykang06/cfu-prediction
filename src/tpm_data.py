@@ -1,9 +1,8 @@
-# All functions for data conversion and extraction from specified path
+"""All data extraction functions for models using TPM data to predict CFU"""
 import pandas as pd
 import numpy as np
 import os
 import functools
-
 from functools import reduce
 
 def read_fcnts_as_df(folder_path):
