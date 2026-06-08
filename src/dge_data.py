@@ -167,3 +167,61 @@ def get_l2fc_and_cfu_data(l2fc_dir, cfu_dir, time_matched):
     data_df = bind_all_data(all_l2fc, all_avg_cfus)
     
     return data_df
+
+
+# Transcriptional interaction score methods
+def simple_interaction_score(l2fc_a, l2fc_b, l2fc_ab):
+    """
+    Function to a compute a simple interaction score to quantify non-additivity in gene expression 
+    using single drug log2foldchange and combination log2foldchange
+
+    Args:
+        l2fc_a   : Log2foldchange in condition A
+        l2fc_b   : Log2foldchange in condition B
+        l2fc_ab : Log2foldchange in combination
+
+    Returns:
+        score : Simple interaction score
+    """
+    score = l2fc_ab - l2fc_a - l2fc_b
+
+    return score
+
+
+# Synergy score methods
+def eob_score(v_a, v_b, v_ab):
+    """
+    Function to calculate the excess over bliss (EOB) synergy score for given single drug survival and a 
+    combination drug survival
+
+    Args:
+        v_a  : Fraction surviving cells in condition A
+        v_b  : Fraction surviving cells in condition B
+        v_ab : Fraction surviving cells in condition A+B
+
+    Returns:
+        score: EOB score calculated using fraction of surviving cells
+    """
+    # EOB score (calculated using survival fraction)
+    score = v_a * v_b - v_ab
+
+    return score
+
+
+def hsa_score(v_a, v_b, v_ab):
+    """  
+    Function to calculate the HSA synergy score for given single drug survival and a 
+    combination drug survival
+
+    Args:
+        v_a  : Fraction surviving cells in condition A
+        v_b  : Fraction surviving cells in condition B
+        v_ab : Fraction surviving cells in condition A+B
+
+    Returns:
+        score: HSA score calculated using fraction of surviving cells
+    """
+    # HSA score (calculated using survival fraction)
+    score = np.min([v_a, v_b]) - v_ab
+
+    return score
