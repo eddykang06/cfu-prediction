@@ -169,7 +169,7 @@ def get_l2fc_and_cfu_data(l2fc_dir, cfu_dir, time_matched):
     return data_df
 
 
-# Transcriptional interaction score methods
+"""Functions to calcualte transcriptional interaction scores"""
 def simple_interaction_score(l2fc_a, l2fc_b, l2fc_ab):
     """
     Function to a compute a simple interaction score to quantify non-additivity in gene expression 
@@ -188,7 +188,7 @@ def simple_interaction_score(l2fc_a, l2fc_b, l2fc_ab):
     return score
 
 
-# Synergy score methods
+"""Functions to calculate drug synergy scores"""
 def eob_score(v_a, v_b, v_ab):
     """
     Function to calculate the excess over bliss (EOB) synergy score for given single drug survival and a 
@@ -225,3 +225,6 @@ def hsa_score(v_a, v_b, v_ab):
     score = np.min([v_a, v_b]) - v_ab
 
     return score
+
+
+"""Functions to generate new data df for synergy prediction"""
