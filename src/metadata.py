@@ -231,3 +231,59 @@ def condition_to_ndc_cfu(condition_label, ndc_cfus):
     ndc_cfu = time_to_cfu[timepoint]
 
     return ndc_cfu
+
+
+def attach_metadata(df):
+    """
+    Function to extract NDC CFU data and attach corresponding metadata to data df
+
+    Args:
+        df : Dataframe with gene expression values on columns
+    
+    Returns:
+        df : Dataframe with metadata and time-matched NDC CFU data attached
+    """
+    # Extract NDC CFU information for each timepoint
+    cfus = df["CFU"]
+    ndc_ids = ["NDC0hr", "NDC1hr", "NDC2hr", "NDC4hr"]
+    ndc_cfus = [cfus.iloc[cfus.index == id].values[0] for id in ndc_ids[1:]]
+
+    # Remove the NDC samples from data
+    df = df.iloc[[i for i in range(df.shape[0]) if df.index[i] not in ndc_ids]]
+
+    # Get condition IDs
+    labels = df.index
+
+    # Extract metadata from condition IDs
+    drug_id = [condition_to_drug_id(label) for label in labels]
+    num_drugs = [2 if "+" in id else 1 for id in drug_id]
+    drug = [condition_to_drugs(label) for label in labels]
+    drug1 = [x[0] for x in drug]
+    drug2 = [x[1] for x in drug]
+    dose = [condition_to_dose(label) for label in labels]
+    dose1 = [x[0] for x in dose]
+    dose2 = [x[1] for x in dose]
+    timepoint = [condition_to_timepoint(label) for label in labels]
+    ndc_cfu = [condition_to_ndc_cfu(label, ndc_cfus) for label in labels]
+
+    # Construct a new dataframe
+    metadata_df = pd.DataFrame({
+        "drug_id": drug_id,
+        "num_drugs": num_drugs,
+        "drug1": drug1,
+        "drug2": drug2,
+        "drug1_dose": dose1,
+        "drug2_dose": dose2,
+        "timepoint": timepoint,
+        "ndc_cfu": ndc_cfu    
+    })
+    metadata_df.index = labels
+
+    # Join with original dataframe
+    df = pd.merge(df, metadata_df, left_index = True, right_index = True, how = "left")
+
+    # Compute survival fraction
+    df["survival_fracton"] = df["CFU"] / df["ndc_cfu"]
+    df = df.drop(columns = ["CFU", "ndc_cfu"])
+
+    return df
