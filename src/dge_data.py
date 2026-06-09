@@ -228,3 +228,106 @@ def hsa_score(v_a, v_b, v_ab):
 
 
 """Functions to generate new data df for synergy prediction"""
+def construct_synergy_df(df, interaction_score_method, synergy_score_method):
+    """
+    Function to construct a dataframe for synergy prediction. Each condition corresponds to a drug combination,
+    and each feature will be a transcriptional interaction score calculated according to specified function.
+    There will be one column of synergy score as the prediction target.
+
+    Args:
+        combo_df                 : Dataframe containing all log2foldchange data and metadata
+        interaction_score_method : Function for calculating transcriptional interaction
+        synergy_score_method     : Function for calculating synergy using survival fraction
+
+    Returns:
+        synergy_df : Dataframe with transcriptaional interaction score as features and EOB score as prediction target
+    """
+    # Check that the only unique num_drugs are 1 and 2
+    unique_num_drugs = df["num_drugs"].unique()
+
+    if set(unique_num_drugs) != set([1, 2]):
+        raise KeyError("num_drugs column contains values other than 1, 2")
+    
+    # Separate data df into single and combination data
+    single_df = df.iloc[(df["num_drugs"] == 1).to_numpy()]
+    combo_df = df.iloc[(df["num_drugs"] == 2).to_numpy()]
+    
+    # Store data size
+    num_single = single_df.shape[0]
+    num_combos = combo_df.shape[0]
+
+    # Identify gene / transcript columns
+    gene_cols = combo_df.columns[combo_df.columns.str.contains("SP", na = False)]
+    
+    rows = []
+
+    for i in range(num_combos):
+
+        # Store current combo data and specify drug 1, drug 2, doses, and timepoint
+        combo_data = combo_df.iloc[i]
+        combo_id = combo_df.index[i]
+        drug1 = combo_data["drug1"]
+        drug2 = combo_data["drug2"]
+        drug1_dose = combo_data["drug1_dose"]
+        drug2_dose = combo_data["drug2_dose"]
+        timepoint = combo_data["timepoint"]
+
+        # Select the two corresponding single drug datapoints from the single drug dataframe
+        single_data1_bool = [
+            i for i in range(num_single) if 
+            single_df.iloc[i]["drug1"] == drug1
+            and pd.isna(single_df.iloc[i]["drug2"])
+            and single_df.iloc[i]["drug1_dose"] == drug1_dose
+            and single_df.iloc[i]["timepoint"] == timepoint
+        ]
+        single_data2_bool = [
+            i for i in range(num_single) if 
+            single_df.iloc[i]["drug1"] == drug2
+            and pd.isna(single_df.iloc[i]["drug2"])
+            and single_df.iloc[i]["drug1_dose"] == drug2_dose 
+            and single_df.iloc[i]["timepoint"] == timepoint
+        ]
+        single_data1 = single_df.iloc[single_data1_bool].iloc[0]
+        single_data2 = single_df.iloc[single_data2_bool].iloc[0]
+        
+        # Extract the survival fractions and compute synergy score
+        surv_frac_combo = combo_data["survival_fraction"]
+        surv_frac1 = single_data1["survival_fraction"]
+        surv_frac2 = single_data2["survival_fraction"]
+
+        synergy_score = synergy_score_method(surv_frac1, surv_frac2, surv_frac_combo)
+
+        # Extract gene expression values
+        l2fc_1 = single_data1[gene_cols]
+        l2fc_2 = single_data2[gene_cols]
+        l2fc_combo = combo_data[gene_cols]
+        
+        # Compute transcriptional interaction score for each gene
+        interaction_scores = {
+            gene: interaction_score_method(v_a, v_b, v_ab)
+            for gene, v_a, v_b, v_ab in zip(
+                gene_cols,
+                l2fc_1,
+                l2fc_2,
+                l2fc_combo
+            )
+        }
+
+        # Build row
+        row = {
+            "ID": combo_id,
+            "drug1": drug1,
+            "drug2": drug2,
+            "drug1_dose": drug1_dose,
+            "drug2_dose": drug2_dose,
+            "timepoint": timepoint,
+            **interaction_scores,
+            "synergy_score": synergy_score
+        }
+        rows.append(row)
+    
+    # Construct dataframe and move condition label to index
+    synergy_df = pd.DataFrame(rows)
+    synergy_df = synergy_df.set_index("ID")
+
+    return synergy_df

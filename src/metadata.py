@@ -283,7 +283,7 @@ def attach_metadata(df):
     df = pd.merge(df, metadata_df, left_index = True, right_index = True, how = "left")
 
     # Compute survival fraction
-    df["survival_fracton"] = df["CFU"] / df["ndc_cfu"]
+    df["survival_fraction"] = df["CFU"] / df["ndc_cfu"]
     df = df.drop(columns = ["CFU", "ndc_cfu"])
 
     return df
