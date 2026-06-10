@@ -1,9 +1,10 @@
-"""All data extraction functions for models using DEG data to predict synergy"""
+"""Data extraction functions for models using DEG data to predict synergy"""
 import pandas as pd
 import numpy as np
 import os
 import functools
 from functools import reduce
+from src.metadata import attach_metadata
 
 def clean_csv_name(name):
     """
@@ -266,6 +267,7 @@ def construct_synergy_df(df, interaction_score_method, synergy_score_method):
         # Store current combo data and specify drug 1, drug 2, doses, and timepoint
         combo_data = combo_df.iloc[i]
         combo_id = combo_df.index[i]
+        drug_id = combo_data["drug_id"]
         drug1 = combo_data["drug1"]
         drug2 = combo_data["drug2"]
         drug1_dose = combo_data["drug1_dose"]
@@ -316,6 +318,7 @@ def construct_synergy_df(df, interaction_score_method, synergy_score_method):
         # Build row
         row = {
             "ID": combo_id,
+            "drug_id": drug_id,
             "drug1": drug1,
             "drug2": drug2,
             "drug1_dose": drug1_dose,
@@ -331,3 +334,25 @@ def construct_synergy_df(df, interaction_score_method, synergy_score_method):
     synergy_df = synergy_df.set_index("ID")
 
     return synergy_df
+
+
+def get_all_synergy_data(
+        l2fc_dir, 
+        cfu_dir, 
+        interaction_score_method,
+        synergy_score_method,
+        time_matched,
+):
+    """
+    Function to run the entire data loading pipeline to output a Dataframe containing
+    all transcriptional interaction scores, synergy scores, and metadata
+    """
+    df = get_l2fc_and_cfu_data(l2fc_dir, cfu_dir, time_matched = time_matched)
+    df = attach_metadata(df)
+    df = construct_synergy_df(
+        df = df,
+        interaction_score_method = interaction_score_method,
+        synergy_score_method = synergy_score_method
+    )
+
+    return df
