@@ -1,3 +1,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
+model1.ipynb
+model2.ipynb
+rough_pipeline.ipynb
