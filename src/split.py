@@ -1,4 +1,5 @@
 """Functions to implement specific train-test splits"""
+
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
@@ -20,6 +21,7 @@ def combination_stratified_split(df, num_folds, seed = None):
     # Initialize splitter
     cv = StratifiedKFold(
         n_splits = num_folds,
+        shuffle = True,
         random_state = seed
     )
 
@@ -71,12 +73,12 @@ def timepoint_held_out_split(df):
 
     # Store drug IDs and select unique combinations
     times = df["timepoint"].to_numpy()
-    unique_combos = np.unique(times)
+    unique_times = np.unique(times)
 
     # Store splits
     splits = []
 
-    for time in times:
+    for time in unique_times:
         
         # Get idx
         train_idx = np.array([i for i in range(len(times)) if times[i] != time])
