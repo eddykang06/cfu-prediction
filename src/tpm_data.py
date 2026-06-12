@@ -2,8 +2,7 @@
 import pandas as pd
 import numpy as np
 import os
-import functools
-from functools import reduce
+from src.metadata import attach_tpm_metadata
 
 def read_fcnts_as_df(folder_path):
     """
@@ -121,15 +120,8 @@ def bind_tpm_data(tpm_df_list):
         stripped_df = df[relevant_idx]
         tpm_df_list_uniq.append(stripped_df)
 
-    all_tpms = reduce(lambda df1, df2 :
-                      pd.merge(df1, df2, 
-                               left_index = True, 
-                               right_index = True, 
-                               how = "outer"),
-                      tpm_df_list_uniq)
-
-    # Tranpose to get genes on columns
-    all_tpms = all_tpms.T
+    # Join and transpose to get genes on columns
+    all_tpms = pd.concat(tpm_df_list_uniq, axis = 1, join = "outer").T
 
     return all_tpms
 
@@ -172,7 +164,7 @@ def read_cfus(folder_path):
     return all_cfus
 
 # Function to bind TPMs
-def bind_all_data(tpm_df, cfu_df):
+def bind_tpm_and_cfu_data(tpm_df, cfu_df):
     """
     Function bind TPM and cfu dfs
     Args:
@@ -187,7 +179,7 @@ def bind_all_data(tpm_df, cfu_df):
 
     return data_df
 
-def data_extract(fcnts_path, cfu_path):
+def get_all_tpm_data(fcnts_path, cfu_path):
     """
     Function to run entire data extraction pipeline
 
@@ -202,6 +194,7 @@ def data_extract(fcnts_path, cfu_path):
     stored_tpms  = fcnts_to_tpms(stored_fcnts)
     tpm_df       = bind_tpm_data(stored_tpms)
     cfu_df       = read_cfus(cfu_path)
-    all_data     = bind_all_data(tpm_df, cfu_df)
+    all_data     = bind_tpm_and_cfu_data(tpm_df, cfu_df)
+    all_data     = attach_tpm_metadata(all_data)
     
     return all_data

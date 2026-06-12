@@ -1,10 +1,8 @@
-"""Data extraction functions for models using DEG data to predict synergy"""
+"""Data extraction functions for models using DGE data to predict synergy"""
 import pandas as pd
 import numpy as np
 import os
-import functools
-from functools import reduce
-from src.metadata import attach_metadata
+from src.metadata import attach_synergy_metadata
 
 def clean_csv_name(name):
     """
@@ -82,6 +80,7 @@ def read_l2fc_as_df(data_dir, time_matched):
 def bind_l2fc_data(l2fc_df_list, ids):
     """
     Function to take a list of l2fc DEG dataframes, then bind all into 1 dataframe
+
     Args: 
         l2fc_df_list : list of l2fc dataframes
         ids          : corresponding sample IDs
@@ -89,15 +88,9 @@ def bind_l2fc_data(l2fc_df_list, ids):
     Returns:
         all_l2fc [N,G] : dataframe with all feature values (N samples on row, G genes on column)
     """
-    all_l2fc = reduce(lambda df1, df2 :
-                      pd.merge(df1, df2, 
-                               left_index = True, 
-                               right_index = True, 
-                               how = "outer"),
-                        l2fc_df_list)
-
-    # Tranpose to get genes on columns
-    all_l2fc = all_l2fc.T
+    # Join and transpose to get genes on columns
+    all_l2fc = pd.concat(l2fc_df_list, axis = 1, join = "outer").T
+    all_l2fc.index = ids
 
     return all_l2fc
 
@@ -143,7 +136,7 @@ def read_avg_cfus(folder_path):
     return all_avg_cfus
 
 
-def bind_all_data(feature_df, cfu_df):
+def bind_l2fc_and_cfu_data(feature_df, cfu_df):
     """
     Function bind TPM and cfu dfs
     Args:
@@ -165,7 +158,7 @@ def get_l2fc_and_cfu_data(l2fc_dir, cfu_dir, time_matched):
     l2fc_df_list, ids = read_l2fc_as_df(l2fc_dir, time_matched)
     all_l2fc = bind_l2fc_data(l2fc_df_list, ids)
     all_avg_cfus = read_avg_cfus(cfu_dir)
-    data_df = bind_all_data(all_l2fc, all_avg_cfus)
+    data_df = bind_l2fc_and_cfu_data(all_l2fc, all_avg_cfus)
     
     return data_df
 
@@ -348,7 +341,7 @@ def get_all_synergy_data(
     all transcriptional interaction scores, synergy scores, and metadata
     """
     df = get_l2fc_and_cfu_data(l2fc_dir, cfu_dir, time_matched = time_matched)
-    df = attach_metadata(df)
+    df = attach_synergy_metadata(df)
     df = construct_synergy_df(
         df = df,
         interaction_score_method = interaction_score_method,

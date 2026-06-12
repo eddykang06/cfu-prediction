@@ -152,7 +152,10 @@ def condition_to_dose(condition_label):
 
     # Single drug case
     if num_upper == 3:
-
+        
+        if "NDC" in condition_label:
+            return [np.nan, np.nan]
+        
         # Find drug name using letter search
         first_alpha_idx = find_first_alpha(condition_label)
         dose = condition_label[:first_alpha_idx]
@@ -192,6 +195,7 @@ def condition_to_timepoint(condition_label):
         timepoint : Time, ex: 1
     """
     time_map = {
+        "0hr": 0,
         "1hr": 1,
         "2hr": 2,
         "4hr": 4
@@ -199,7 +203,7 @@ def condition_to_timepoint(condition_label):
 
     # Find the timepoint label
     time_idx = condition_label.find("hr")
-    timepoint = condition_label[time_idx - 1:]
+    timepoint = condition_label[time_idx - 1:time_idx + 2]
 
     # Convert to int
     timepoint = time_map[timepoint]
@@ -233,7 +237,49 @@ def condition_to_ndc_cfu(condition_label, ndc_cfus):
     return ndc_cfu
 
 
-def attach_metadata(df):
+def attach_tpm_metadata(df):
+    """
+    Function to attach corresponding metadata to data df
+
+    Args:
+        df : Dataframe with gene expression values on columns
+    
+    Returns:
+        df : Dataframe with metadata and time-matched NDC CFU data attached
+    """
+    # Get condition IDs
+    labels = df.index
+
+    # Extract metadata from condition IDs
+    drug_id = [condition_to_drug_id(label) for label in labels]
+    num_drugs = [2 if "+" in id else 1 for id in drug_id]
+    drug = [condition_to_drugs(label) for label in labels]
+    drug1 = [x[0] for x in drug]
+    drug2 = [x[1] for x in drug]
+    dose = [condition_to_dose(label) for label in labels]
+    dose1 = [x[0] for x in dose]
+    dose2 = [x[1] for x in dose]
+    timepoint = [condition_to_timepoint(label) for label in labels]
+
+    # Construct a new dataframe
+    metadata_df = pd.DataFrame({
+        "drug_id": drug_id,
+        "num_drugs": num_drugs,
+        "drug1": drug1,
+        "drug2": drug2,
+        "drug1_dose": dose1,
+        "drug2_dose": dose2,
+        "timepoint": timepoint,
+    })
+    metadata_df.index = labels
+
+    # Join with original dataframe
+    df = pd.merge(df, metadata_df, left_index = True, right_index = True, how = "left")
+
+    return df
+
+
+def attach_synergy_metadata(df):
     """
     Function to extract NDC CFU data and attach corresponding metadata to data df
 
